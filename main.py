@@ -26,7 +26,8 @@ def text(a, b):
 
 
 @app.get('/quadro/')
-def retorno(tempos_materia: str, ano):
+def quadro(tempos_materia: str, ano, quantidade_quadros):
+    quantidade_quadros =int(quantidade_quadros)
     peso_ano = pesos(ano)
     if peso_ano =="Ano Inválido":
         return f"{ano} não é um ano válido"
@@ -38,10 +39,10 @@ def retorno(tempos_materia: str, ano):
     
     materias = list(tempos_materia.keys())
 
-    quadro = criar_modelo_inteiro(materias, tempos_materia, peso_ano)
+    nquadros = criar_modelo_inteiro(materias, tempos_materia, peso_ano, quantidade_quadros)
     
 
-    return quadro
+    return nquadros
 
 
 if __name__ == '__main__':

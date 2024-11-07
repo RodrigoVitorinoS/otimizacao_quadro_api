@@ -7,7 +7,7 @@ dias = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']
 
 
 
-def criar_modelo_inteiro(materias, tempos_materia, pesos):
+def criar_modelo_inteiro(materias, tempos_materia, pesos, quantidade_quadros):
     
     # Cria o solver
     solver = pywraplp.Solver.CreateSolver('SCIP')
@@ -51,30 +51,48 @@ def criar_modelo_inteiro(materias, tempos_materia, pesos):
             solver.Add(sum(aulas[(dia, materia, tempo)] for dia in dias) == 1)
         for dia in dias:
             solver.Add(aulas[(dia, materia, 2)] <= aulas[(dia, materia, 1)])
-            # if tempos_materia[materia] >= 4:
-            #     solver.Add(aulas[(dia, materia, 4)] <= aulas[(dia, materia, 3)])
+            if tempos_materia[materia] >= 4:
+                solver.Add(aulas[(dia, materia, 4)] <= aulas[(dia, materia, 3)])
             # if tempos_materia[materia] == 5:
             #     solver.Add(aulas[(dia, materia, 5)] <= aulas[(dia, materia, 4)])
 
             # Restrição de no máximo 4 aulas por dia
             solver.Add(sum(aulas[(dia, materia, tempo)] for tempo in range(1, tempos_materia[materia]+1)) <= 4)
     
-    # Solução
-    status = solver.Solve()
-
-    # if status == pywraplp.Solver.OPTIMAL:
-    #     return solver.Objective().Value()
-    # else:
-    #     return 'errado'
+    nquadros = resultado_quadro(solver, materias, aulas, tempos_materia, quantidade_quadros)
+    return nquadros
     
 
+def resultado_quadro(solver, materias, aulas, tempos_materia, quantidade_quadros):
+    nquadros =[]
     quadro = {}
+    status = solver.Solve()
     for dia in dias:
-        for materia in materias:
-            for tempo in range(1, tempos_materia[materia]+1):
-                if aulas[(dia, materia, tempo)].solution_value() == 1:
-                    quadro[dia] = quadro.get(dia, []) + [materia]
-    return quadro
+            for materia in materias:
+                for tempo in range(1, tempos_materia[materia]+1):
+                    if aulas[(dia, materia, tempo)].solution_value() == 1:
+                        quadro[dia] = quadro.get(dia, []) + [materia]
+    nquadros.append(quadro)
+
+    for i in range(quantidade_quadros - 1):
+        quadro = {}
+        expr = 0
+        for var in aulas.values():
+            if var.solution_value() < 0.5:
+                expr += var
+            else:
+                expr += (1 - var)
+        solver.Add(expr >=1)
+        status = solver.Solve()
+        for dia in dias:
+            for materia in materias:
+                for tempo in range(1, tempos_materia[materia]+1):
+                    if aulas[(dia, materia, tempo)].solution_value() == 1:
+                        quadro[dia] = quadro.get(dia, []) + [materia]
+        nquadros.append(quadro)
+
+    return nquadros
+
     
 
 
